@@ -10,7 +10,8 @@ import {
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "Admin · Discovery Portal" }, { name: "robots", content: "noindex" }] }),
-  beforeLoad: async () => {
+  beforeLoad: async ({ location }) => {
+    if (location.pathname.startsWith("/admin/login")) return;
     const session = await getAdminSession();
     if (!session.userId) throw redirect({ to: "/admin/login" });
   },
