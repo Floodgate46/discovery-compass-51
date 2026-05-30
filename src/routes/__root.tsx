@@ -80,9 +80,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { title: "Healthcare Workforce Management Discovery Portal" },
       { name: "description", content: "Enterprise discovery workshop that captures every requirement for your healthcare workforce platform and generates a complete BRD." },
       { property: "og:title", content: "Healthcare Workforce Management Discovery Portal" },
-      { property: "og:description", content: "Structured 15-section wizard for healthcare workforce platform discovery." },
+      { property: "og:description", content: "Enterprise discovery workshop that captures every requirement for your healthcare workforce platform and generates a complete BRD." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Healthcare Workforce Management Discovery Portal" },
+      { name: "twitter:description", content: "Enterprise discovery workshop that captures every requirement for your healthcare workforce platform and generates a complete BRD." },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/f79fa42b-389a-484d-83bb-7d786cf993e6" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/f79fa42b-389a-484d-83bb-7d786cf993e6" },
     ],
     links: [
       {
