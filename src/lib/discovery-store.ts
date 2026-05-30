@@ -25,6 +25,7 @@ export interface ApprovalLevel {
 export interface DiscoveryData {
   // Section 1
   companyName: string;
+  contactEmail: string;
   industry: Industry | "";
   country: string;
   employees: string;
@@ -113,6 +114,7 @@ export interface DiscoveryData {
 
 const initialData: DiscoveryData = {
   companyName: "",
+  contactEmail: "",
   industry: "",
   country: "",
   employees: "",

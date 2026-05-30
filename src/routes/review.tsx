@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useDiscovery, SECTIONS } from "@/lib/discovery-store";
+import { submitDiscovery } from "@/lib/api/discovery.functions";
 import { generateBRD } from "@/lib/pdf-generator";
 import { useState } from "react";
 
@@ -11,9 +12,33 @@ export const Route = createFileRoute("/review")({
 function ReviewPage() {
   const { data, reset } = useDiscovery();
   const [submitted, setSubmitted] = useState(false);
+  const [submissionId, setSubmissionId] = useState("");
+  const [emailSent, setEmailSent] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
+    setSubmitError("");
+
+    try {
+      const result = await submitDiscovery({ data });
+      setSubmissionId(result.id);
+      setEmailSent(result.emailSent);
+      setSaved(result.saved);
+      setSubmitted(true);
+    } catch (error) {
+      console.error(error);
+      setSubmitError("We could not save your submission. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const summaries: Array<[string, string | string[] | undefined]> = [
     ["Company", data.companyName],
+    ["Contact email", data.contactEmail],
     ["Industry", data.industry],
     ["Country", data.country],
     ["Workforce size", `${data.employees || "—"} employees · ${data.clients || "—"} clients · ${data.locations || "—"} locations`],
@@ -101,18 +126,29 @@ function ReviewPage() {
             Download Discovery Report (PDF)
           </button>
           <button
-            onClick={() => setSubmitted(true)}
-            disabled={submitted}
+            onClick={handleSubmit}
+            disabled={submitted || isSubmitting}
             className="inline-flex items-center gap-2 rounded-xl border border-accent/40 bg-accent/10 px-6 py-3.5 text-sm font-semibold text-accent transition hover:bg-accent/15 disabled:opacity-60"
           >
-            {submitted ? "Submitted ✓" : "Submit for Solution Design"}
+            {submitted ? "Submitted ✓" : isSubmitting ? "Submitting..." : "Submit for Solution Design"}
           </button>
         </div>
 
+        {submitError && (
+          <div className="mt-6 mx-auto max-w-xl rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-center text-sm text-destructive">
+            {submitError}
+          </div>
+        )}
+
         {submitted && (
           <div className="mt-6 mx-auto max-w-xl glass-card rounded-xl p-5 text-center">
-            <div className="text-sm font-medium text-success">Thank you! Our solution architects will be in touch within 2 business days.</div>
-            <button onClick={() => { reset(); setSubmitted(false); }} className="mt-3 text-xs text-muted-foreground hover:text-foreground underline">Start a new discovery</button>
+            <div className="text-sm font-medium text-success">
+              {emailSent
+                ? `Thank you! Your discovery was emailed to support@jetechltd.com.ng${saved ? " and saved" : ""}.`
+                : "Thank you! Your discovery was received for solution design."}
+            </div>
+            {submissionId && <div className="mt-2 text-xs text-muted-foreground">Reference: {submissionId}</div>}
+            <button onClick={() => { reset(); setSubmitted(false); setSubmissionId(""); setEmailSent(false); setSaved(false); }} className="mt-3 text-xs text-muted-foreground hover:text-foreground underline">Start a new discovery</button>
           </div>
         )}
 

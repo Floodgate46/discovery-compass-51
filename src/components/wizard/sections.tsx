@@ -22,6 +22,7 @@ export function S1Organization() {
       <SectionHeader title="Organization Information" subtitle="A snapshot of your business so we can scope the right solution." />
       <div className="grid sm:grid-cols-2 gap-4">
         <Field label="Company Name"><TextInput value={data.companyName} onChange={(e) => update({ companyName: e.target.value })} placeholder="Acme Healthcare" /></Field>
+        <Field label="Contact Email"><TextInput type="email" value={data.contactEmail} onChange={(e) => update({ contactEmail: e.target.value })} placeholder="name@company.com" /></Field>
         <Field label="Industry Type">
           <Select value={data.industry} onChange={(e) => update({ industry: e.target.value as never })}>
             <option value="">Select industry…</option>
