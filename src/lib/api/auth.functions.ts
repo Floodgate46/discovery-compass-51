@@ -45,7 +45,7 @@ async function verifySessionToken(token: string): Promise<string | null> {
 export const loginAdmin = createServerFn({ method: "POST" })
   .inputValidator(z.object({ email: z.string().email(), password: z.string().min(1) }))
   .handler(async ({ data }) => {
-    const { prisma } = await import("./prisma.server");
+    const { prisma } = await import("../prisma.server");
     const user = await prisma.adminUser.findUnique({ where: { email: data.email } });
     if (!user) return { ok: false, error: "Invalid credentials" };
 
