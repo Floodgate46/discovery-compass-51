@@ -1,6 +1,13 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useDiscovery, SECTIONS } from "@/lib/discovery-store";
 import { SECTION_COMPONENTS } from "@/components/wizard/sections";
+import { validateSection, type ValidationErrors } from "@/lib/validation";
+import { WizardErrorBoundary } from "@/components/wizard/error-boundary";
+import { useState, createContext, useContext } from "react";
+import "@/lib/sentry";
+
+export const ValidationContext = createContext<ValidationErrors>({});
+export const useValidationErrors = () => useContext(ValidationContext);
 
 export const Route = createFileRoute("/wizard")({
   head: () => ({ meta: [{ title: "Discovery Wizard · Getnoo" }, { name: "robots", content: "noindex" }] }),
@@ -10,16 +17,20 @@ export const Route = createFileRoute("/wizard")({
 function WizardPage() {
   const { currentStep, setStep, data } = useDiscovery();
   const navigate = useNavigate();
+  const [errors, setErrors] = useState<ValidationErrors>({});
   const step = Math.min(currentStep, SECTIONS.length - 1);
   const Section = SECTION_COMPONENTS[step];
   const section = SECTIONS[step];
   const progress = ((step + 1) / SECTIONS.length) * 100;
 
   const next = () => {
+    const errs = validateSection(step, data);
+    if (Object.keys(errs).length > 0) { setErrors(errs); return; }
+    setErrors({});
     if (step === SECTIONS.length - 1) navigate({ to: "/review" });
     else setStep(step + 1);
   };
-  const prev = () => setStep(Math.max(0, step - 1));
+  const prev = () => { setErrors({}); setStep(Math.max(0, step - 1)); };
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row">
@@ -77,7 +88,11 @@ function WizardPage() {
         </div>
 
         <div className="glass-card rounded-2xl p-6 md:p-8">
-          <Section />
+          <WizardErrorBoundary>
+            <ValidationContext.Provider value={errors}>
+              <Section />
+            </ValidationContext.Provider>
+          </WizardErrorBoundary>
         </div>
 
         <div className="mt-8 flex items-center justify-between gap-3">

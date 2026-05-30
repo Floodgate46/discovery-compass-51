@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 
-export function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
+export function Field({ label, hint, error, children }: { label: string; hint?: string; error?: string; children: ReactNode }) {
   return (
     <label className="block space-y-2">
       <div>
@@ -8,6 +8,7 @@ export function Field({ label, hint, children }: { label: string; hint?: string;
         {hint && <div className="text-xs text-muted-foreground mt-0.5">{hint}</div>}
       </div>
       {children}
+      {error && <div className="text-xs text-destructive mt-1">{error}</div>}
     </label>
   );
 }

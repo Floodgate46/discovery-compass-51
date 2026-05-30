@@ -1,5 +1,6 @@
 import { useDiscovery } from "@/lib/discovery-store";
 import { Field, TextInput, TextArea, Select, MultiSelect, Toggle, SectionHeader } from "./fields";
+import { useValidationErrors } from "@/routes/wizard";
 
 const ROLES = [
   "Administrators", "Supervisors", "Caregivers", "Nurses",
@@ -17,19 +18,20 @@ const COMPLIANCE_MAP: Record<string, string[]> = {
 
 export function S1Organization() {
   const { data, update } = useDiscovery();
+  const errors = useValidationErrors();
   return (
     <div className="space-y-6">
       <SectionHeader title="Organization Information" subtitle="A snapshot of your business so we can scope the right solution." />
       <div className="grid sm:grid-cols-2 gap-4">
-        <Field label="Company Name"><TextInput value={data.companyName} onChange={(e) => update({ companyName: e.target.value })} placeholder="Acme Healthcare" /></Field>
-        <Field label="Contact Email"><TextInput type="email" value={data.contactEmail} onChange={(e) => update({ contactEmail: e.target.value })} placeholder="name@company.com" /></Field>
-        <Field label="Industry Type">
+        <Field label="Company Name" error={errors.companyName}><TextInput value={data.companyName} onChange={(e) => update({ companyName: e.target.value })} placeholder="Acme Healthcare" /></Field>
+        <Field label="Contact Email" error={errors.contactEmail}><TextInput type="email" value={data.contactEmail} onChange={(e) => update({ contactEmail: e.target.value })} placeholder="name@company.com" /></Field>
+        <Field label="Industry Type" error={errors.industry}>
           <Select value={data.industry} onChange={(e) => update({ industry: e.target.value as never })}>
             <option value="">Select industry…</option>
             {["Home Care Agency","Healthcare Staffing","Nursing Agency","Disability Support","Hospital","Community Care","Other"].map(i => <option key={i}>{i}</option>)}
           </Select>
         </Field>
-        <Field label="Country">
+        <Field label="Country" error={errors.country}>
           <Select value={data.country} onChange={(e) => update({ country: e.target.value, complianceCountry: e.target.value })}>
             <option value="">Select country…</option>
             {COUNTRIES.map(c => <option key={c}>{c}</option>)}
@@ -49,6 +51,7 @@ export function S1Organization() {
 
 export function S2Roles() {
   const { data, update } = useDiscovery();
+  const errors = useValidationErrors();
   const updateRoleDetail = (role: string, key: "canView" | "canEdit" | "approvals", value: string) => {
     const existing = data.roleDetails.find(r => r.role === role);
     const others = data.roleDetails.filter(r => r.role !== role);
@@ -59,7 +62,7 @@ export function S2Roles() {
   return (
     <div className="space-y-6">
       <SectionHeader title="User Roles & Permissions" subtitle="We'll build a role matrix from your selections." />
-      <Field label="Who will use the system?">
+      <Field label="Who will use the system?" error={errors.userRoles}>
         <MultiSelect options={ROLES} value={data.userRoles} onChange={(v) => update({ userRoles: v })} columns={3} />
       </Field>
       {data.userRoles.length > 0 && (
@@ -203,7 +206,6 @@ export function S7Approval() {
         <Toggle checked={data.delegationAllowed} onChange={(v) => update({ delegationAllowed: v })} label="Approvals can be delegated" />
         <Toggle checked={data.rejectedEditable} onChange={(v) => update({ rejectedEditable: v })} label="Rejected timesheets can be edited" />
       </div>
-      {/* Visual workflow diagram */}
       <div className="glass-card rounded-xl p-5">
         <div className="text-xs uppercase tracking-wider text-muted-foreground mb-3">Workflow preview</div>
         <div className="flex flex-wrap items-center gap-2">
@@ -224,11 +226,12 @@ export function S7Approval() {
 
 export function S8Compliance() {
   const { data, update } = useDiscovery();
+  const errors = useValidationErrors();
   const standards = COMPLIANCE_MAP[data.complianceCountry] ?? [];
   return (
     <div className="space-y-6">
       <SectionHeader title="Compliance & Regulations" />
-      <Field label="Operating country">
+      <Field label="Operating country" error={errors.complianceCountry}>
         <Select value={data.complianceCountry} onChange={(e) => update({ complianceCountry: e.target.value })}>
           <option value="">Select…</option>
           {COUNTRIES.map(c => <option key={c}>{c}</option>)}
@@ -288,17 +291,18 @@ export function S10Documents() {
 
 export function S11Payroll() {
   const { data, update } = useDiscovery();
+  const errors = useValidationErrors();
   return (
     <div className="space-y-6">
       <SectionHeader title="Payroll & Billing" />
       <div className="grid sm:grid-cols-2 gap-4">
-        <Field label="Payroll system">
+        <Field label="Payroll system" error={errors.payrollSystem}>
           <Select value={data.payrollSystem} onChange={(e) => update({ payrollSystem: e.target.value })}>
             <option value="">Select…</option>
             {["Xero","QuickBooks","Sage","MYOB","Custom","None"].map(p => <option key={p}>{p}</option>)}
           </Select>
         </Field>
-        <Field label="Billing model">
+        <Field label="Billing model" error={errors.billingModel}>
           <Select value={data.billingModel} onChange={(e) => update({ billingModel: e.target.value })}>
             <option value="">Select…</option>
             {["Hourly","Daily","Weekly","Monthly"].map(p => <option key={p}>{p}</option>)}

@@ -1,10 +1,5 @@
 import type { DiscoveryData } from "./discovery-store";
 
-const SUBMISSION_EMAIL = process.env.SUBMISSION_EMAIL_TO ?? "support@jetechltd.com.ng";
-const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const RESEND_FROM_EMAIL =
-  process.env.RESEND_FROM_EMAIL ?? "Discovery Portal <onboarding@resend.dev>";
-
 function formatValue(value: unknown): string {
   if (Array.isArray(value)) return value.length ? value.join(", ") : "-";
   if (typeof value === "boolean") return value ? "Yes" : "No";
@@ -60,7 +55,11 @@ function escapeHtml(value: string) {
 }
 
 export async function sendSubmissionEmail(data: DiscoveryData, submissionId: string) {
-  if (!RESEND_API_KEY) {
+  const apiKey = process.env.RESEND_API_KEY;
+  const fromEmail = process.env.RESEND_FROM_EMAIL ?? "Discovery Portal <onboarding@resend.dev>";
+  const toEmail = process.env.SUBMISSION_EMAIL_TO ?? "support@jetechltd.com.ng";
+
+  if (!apiKey) {
     return { sent: false, reason: "RESEND_API_KEY is not configured" };
   }
 
@@ -71,12 +70,12 @@ export async function sendSubmissionEmail(data: DiscoveryData, submissionId: str
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${RESEND_API_KEY}`,
+      Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from: RESEND_FROM_EMAIL,
-      to: [SUBMISSION_EMAIL],
+      from: fromEmail,
+      to: [toEmail],
       reply_to: replyTo,
       subject,
       text,

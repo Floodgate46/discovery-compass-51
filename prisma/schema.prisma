@@ -22,3 +22,12 @@ model DiscoverySubmission {
   @@index([country])
   @@map("discovery_submissions")
 }
+
+model AdminUser {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+
+  @@map("admin_users")
+}
