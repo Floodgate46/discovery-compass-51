@@ -1,6 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useDiscovery, SECTIONS } from "@/lib/discovery-store";
-import heroImage from "@/assets/q-hero.png?url";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -132,7 +131,7 @@ function HeroBackground() {
   return (
     <div className="pointer-events-none absolute inset-x-0 top-0 z-0 h-[720px] overflow-hidden">
       <img
-        src={heroImage}
+        src="/q-hero.jpg"
         alt=""
         aria-hidden="true"
         className="h-full w-full object-cover object-center"

@@ -1,6 +1,5 @@
 import jsPDF from "jspdf";
 import type { DiscoveryData } from "./discovery-store";
-import coverImage from "@/assets/brd-cover.jpg?url";
 
 async function loadImageAsDataUrl(url: string): Promise<string | null> {
   try {
@@ -110,7 +109,7 @@ export async function generateBRD(data: DiscoveryData) {
   doc.setFillColor(15, 30, 55);
   doc.rect(0, 0, W, 170, "F");
 
-  const coverData = await loadImageAsDataUrl(coverImage);
+  const coverData = await loadImageAsDataUrl("/brd-cover.jpg");
   if (coverData) {
     try { doc.addImage(coverData, "JPEG", W - 210, 15, 170, 130); } catch { /* ignore */ }
   }
