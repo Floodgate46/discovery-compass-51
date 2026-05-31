@@ -79,7 +79,7 @@ const baseData: DiscoveryData = {
   lastSaved: "",
 };
 
-let generateBRD: (data: DiscoveryData) => void;
+let generateBRD: (data: DiscoveryData) => Promise<void>;
 
 beforeAll(async () => {
   const mod = await import("../pdf-generator");
@@ -89,29 +89,29 @@ beforeAll(async () => {
 describe("generateBRD", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("calls doc.save with the company name in the filename", () => {
-    generateBRD(baseData);
+  it("calls doc.save with the company name in the filename", async () => {
+    await generateBRD(baseData);
     expect(mockDoc.save).toHaveBeenCalledWith(expect.stringContaining("Test-Co"));
   });
 
-  it("calls doc.save once", () => {
-    generateBRD(baseData);
+  it("calls doc.save once", async () => {
+    await generateBRD(baseData);
     expect(mockDoc.save).toHaveBeenCalledTimes(1);
   });
 
-  it("uses 'Client' as fallback when companyName is empty", () => {
-    generateBRD({ ...baseData, companyName: "" });
+  it("uses 'Client' as fallback when companyName is empty", async () => {
+    await generateBRD({ ...baseData, companyName: "" });
     expect(mockDoc.save).toHaveBeenCalledWith(expect.stringContaining("Client"));
   });
 
-  it("renders role details for each selected role", () => {
-    generateBRD(baseData);
+  it("renders role details for each selected role", async () => {
+    await generateBRD(baseData);
     const textCalls = mockDoc.text.mock.calls.map((c: unknown[]) => c[0]);
     expect(textCalls.some((t: unknown) => typeof t === "string" && t.includes("Administrators"))).toBe(true);
   });
 
-  it("does not throw with all-empty optional fields", () => {
-    expect(() =>
+  it("does not throw with all-empty optional fields", async () => {
+    await expect(
       generateBRD({
         ...baseData,
         userRoles: [],
@@ -128,6 +128,6 @@ describe("generateBRD", () => {
         integrations: [],
         futureCapabilities: [],
       })
-    ).not.toThrow();
+    ).resolves.not.toThrow();
   });
 });

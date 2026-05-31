@@ -1,5 +1,21 @@
 import jsPDF from "jspdf";
 import type { DiscoveryData } from "./discovery-store";
+import coverImage from "@/assets/brd-cover.jpg";
+
+async function loadImageAsDataUrl(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    return await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+}
 
 function stripMd(text: string): string {
   return text
@@ -12,7 +28,7 @@ function stripMd(text: string): string {
     .trim();
 }
 
-export function generateBRD(data: DiscoveryData) {
+export async function generateBRD(data: DiscoveryData) {
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const W = doc.internal.pageSize.getWidth();
   const H = doc.internal.pageSize.getHeight();
@@ -64,6 +80,10 @@ export function generateBRD(data: DiscoveryData) {
 
   // Cover
   doc.setFillColor(15, 30, 55); doc.rect(0, 0, W, 160, "F");
+  const coverData = await loadImageAsDataUrl(coverImage);
+  if (coverData) {
+    try { doc.addImage(coverData, "JPEG", W - 200, 20, 160, 120); } catch { /* ignore */ }
+  }
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold"); doc.setFontSize(22);
   doc.text("Business Requirements Document", M, 80);
