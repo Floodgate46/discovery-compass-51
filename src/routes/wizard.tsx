@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useDiscovery, SECTIONS } from "@/lib/discovery-store";
+import { useDiscovery, SECTIONS, type DiscoveryData } from "@/lib/discovery-store";
 import { SECTION_COMPONENTS } from "@/components/wizard/sections";
 import { validateSection, type ValidationErrors } from "@/lib/validation";
 import { WizardErrorBoundary } from "@/components/wizard/error-boundary";
@@ -8,6 +8,25 @@ import "@/lib/sentry";
 
 export const ValidationContext = createContext<ValidationErrors>({});
 export const useValidationErrors = () => useContext(ValidationContext);
+
+// Sections skipped when the user has turned off the relevant toggle
+const SKIP_IF: Partial<Record<number, (d: DiscoveryData) => boolean>> = {
+  3: (d) => !d.managesClients,
+  4: (d) => !d.hasShifts,
+  8: (d) => !d.attendanceVerification,
+};
+
+function getNextStep(from: number, data: DiscoveryData): number | "review" {
+  let next = from + 1;
+  while (next < SECTIONS.length && SKIP_IF[next]?.(data)) next++;
+  return next >= SECTIONS.length ? "review" : next;
+}
+
+function getPrevStep(from: number, data: DiscoveryData): number {
+  let prev = from - 1;
+  while (prev > 0 && SKIP_IF[prev]?.(data)) prev--;
+  return Math.max(0, prev);
+}
 
 export const Route = createFileRoute("/wizard")({
   head: () => ({ meta: [{ title: "Discovery Wizard · Getnoo" }, { name: "robots", content: "noindex" }] }),
@@ -21,16 +40,23 @@ function WizardPage() {
   const step = Math.min(currentStep, SECTIONS.length - 1);
   const Section = SECTION_COMPONENTS[step];
   const section = SECTIONS[step];
-  const progress = ((step + 1) / SECTIONS.length) * 100;
+
+  const skipped = new Set(
+    Object.keys(SKIP_IF).map(Number).filter((i) => SKIP_IF[i]!(data))
+  );
+  const totalVisible = SECTIONS.length - skipped.size;
+  const visibleDone = [...Array(step + 1).keys()].filter((i) => !skipped.has(i)).length;
+  const progress = (visibleDone / totalVisible) * 100;
+  const nextDest = getNextStep(step, data);
 
   const next = () => {
     const errs = validateSection(step, data);
     if (Object.keys(errs).length > 0) { setErrors(errs); return; }
     setErrors({});
-    if (step === SECTIONS.length - 1) navigate({ to: "/review" });
-    else setStep(step + 1);
+    if (nextDest === "review") navigate({ to: "/review" });
+    else setStep(nextDest as number);
   };
-  const prev = () => { setErrors({}); setStep(Math.max(0, step - 1)); };
+  const prev = () => { setErrors({}); setStep(getPrevStep(step, data)); };
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row">
@@ -55,24 +81,38 @@ function WizardPage() {
           {data.lastSaved && <div className="mt-2 text-[10px] text-muted-foreground">Auto-saved {new Date(data.lastSaved).toLocaleTimeString()}</div>}
         </div>
 
-        <nav className="space-y-1">
+        <nav className="space-y-1" aria-label="Wizard sections">
           {SECTIONS.map((s, i) => {
             const active = i === step;
-            const done = i < step;
+            const isSkipped = skipped.has(i);
+            const done = i < step && !isSkipped;
             return (
               <button
                 key={s.id}
                 onClick={() => setStep(i)}
+                aria-current={active ? "step" : undefined}
+                aria-label={`${s.title}${isSkipped ? " (skipped)" : done ? " (complete)" : ""}`}
                 className={`group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition ${
-                  active ? "bg-primary/15 text-foreground" : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
+                  active
+                    ? "bg-primary/15 text-foreground"
+                    : isSkipped
+                    ? "opacity-40 text-muted-foreground hover:opacity-70"
+                    : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
                 }`}
               >
                 <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[10px] font-semibold ${
-                  active ? "bg-primary text-primary-foreground" : done ? "bg-success/20 text-success" : "bg-secondary text-muted-foreground"
+                  active ? "bg-primary text-primary-foreground" :
+                  done ? "bg-success/20 text-success" :
+                  "bg-secondary text-muted-foreground"
                 }`}>
-                  {done ? <svg viewBox="0 0 12 12" className="h-3 w-3"><path d="M2 6l3 3 5-6" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg> : i + 1}
+                  {done ? (
+                    <svg viewBox="0 0 12 12" className="h-3 w-3" aria-hidden="true"><path d="M2 6l3 3 5-6" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                  ) : isSkipped ? (
+                    <svg viewBox="0 0 12 12" className="h-3 w-3" aria-hidden="true"><path d="M2 6h6M6 3l3 3-3 3" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" /></svg>
+                  ) : i + 1}
                 </span>
                 <span className="truncate">{s.title}</span>
+                {isSkipped && <span className="ml-auto text-[10px] text-muted-foreground/70 shrink-0">skip</span>}
               </button>
             );
           })}
@@ -99,18 +139,20 @@ function WizardPage() {
           <button
             onClick={prev}
             disabled={step === 0}
+            aria-label="Go to previous section"
             className="inline-flex items-center gap-2 rounded-lg border border-border bg-surface px-4 py-2.5 text-sm text-foreground transition hover:border-primary/30 disabled:cursor-not-allowed disabled:opacity-40"
           >
-            <svg viewBox="0 0 16 16" className="h-4 w-4"><path d="M13 8H3m0 0l4-4m-4 4l4 4" stroke="currentColor" strokeWidth="1.75" fill="none" strokeLinecap="round" /></svg>
+            <svg viewBox="0 0 16 16" className="h-4 w-4" aria-hidden="true"><path d="M13 8H3m0 0l4-4m-4 4l4 4" stroke="currentColor" strokeWidth="1.75" fill="none" strokeLinecap="round" /></svg>
             Back
           </button>
           <Link to="/" className="text-xs text-muted-foreground hover:text-foreground">Save & exit</Link>
           <button
             onClick={next}
+            aria-label={nextDest === "review" ? "Review and generate BRD" : "Go to next section"}
             className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-glow transition hover:scale-[1.02]"
           >
-            {step === SECTIONS.length - 1 ? "Review & Generate" : "Continue"}
-            <svg viewBox="0 0 16 16" className="h-4 w-4"><path d="M3 8h10m0 0L9 4m4 4l-4 4" stroke="currentColor" strokeWidth="1.75" fill="none" strokeLinecap="round" /></svg>
+            {nextDest === "review" ? "Review & Generate" : "Continue"}
+            <svg viewBox="0 0 16 16" className="h-4 w-4" aria-hidden="true"><path d="M3 8h10m0 0L9 4m4 4l-4 4" stroke="currentColor" strokeWidth="1.75" fill="none" strokeLinecap="round" /></svg>
           </button>
         </div>
       </main>

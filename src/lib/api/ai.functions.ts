@@ -47,6 +47,62 @@ function buildDataSummary(data: DiscoveryData): string {
   }, null, 2);
 }
 
+// Dynamic compliance requirements generation
+export const generateComplianceRequirements = createServerFn({ method: "POST" })
+  .inputValidator(z.object({ country: z.string(), industry: z.string() }))
+  .handler(async ({ data }) => {
+    const content = await callOpenRouter([
+      {
+        role: "system",
+        content: `You are a healthcare compliance expert. Given a country and industry, return a JSON object with exactly these keys:
+- standards: string[] (up to 6 applicable regulatory standards/frameworks)
+- requirements: string (2-3 sentences summarising key compliance obligations)
+- retention: string (record retention requirements, e.g. "7 years for care records under CQC")
+Return ONLY valid JSON, no markdown.`,
+      },
+      { role: "user", content: `Country: ${data.country}\nIndustry: ${data.industry}` },
+    ], 400);
+    try {
+      return JSON.parse(content) as { standards: string[]; requirements: string; retention: string };
+    } catch {
+      return { standards: [], requirements: content, retention: "" };
+    }
+  });
+
+// AI field content suggestions for wizard free-text fields
+export const suggestFieldContent = createServerFn({ method: "POST" })
+  .inputValidator(z.object({
+    field: z.enum(["challenges", "services", "orgDescription"]),
+    industry: z.string(),
+    country: z.string(),
+  }))
+  .handler(async ({ data }) => {
+    const prompts: Record<string, string> = {
+      challenges: `List 3-4 specific business challenges typically faced by a ${data.industry} in ${data.country}. Be concrete and operational. 2-3 sentences total.`,
+      services: `Describe the typical services provided by a ${data.industry} in ${data.country}. Be specific to the industry. 2-3 sentences.`,
+      orgDescription: `Write a concise organisational overview template for a ${data.industry} operating in ${data.country}. 2-3 sentences.`,
+    };
+    const suggestion = await callOpenRouter([
+      { role: "system", content: "You are a healthcare business analyst. Write concise, industry-specific content that the user can edit." },
+      { role: "user", content: prompts[data.field] },
+    ], 200);
+    return { suggestion };
+  });
+
+// Analytics narrative for admin dashboard
+export const generateAnalyticsNarrative = createServerFn({ method: "POST" })
+  .inputValidator(z.object({ analytics: z.record(z.unknown()) }))
+  .handler(async ({ data }) => {
+    const narrative = await callOpenRouter([
+      {
+        role: "system",
+        content: "You are a product analyst. Write a 2-3 sentence executive summary of discovery questionnaire submission trends. Be specific, actionable, and highlight the most important patterns.",
+      },
+      { role: "user", content: `Analytics data:\n${JSON.stringify(data.analytics, null, 2)}` },
+    ], 300);
+    return { narrative };
+  });
+
 // Sprint 7: Cross-section consistency check
 export const checkConsistency = createServerFn({ method: "POST" })
   .inputValidator(z.object({ data: z.record(z.unknown()) }))

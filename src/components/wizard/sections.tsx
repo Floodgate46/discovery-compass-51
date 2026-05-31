@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { useDiscovery } from "@/lib/discovery-store";
 import { Field, TextInput, TextArea, Select, MultiSelect, Toggle, SectionHeader } from "./fields";
 import { useValidationErrors } from "@/routes/wizard";
+import { suggestFieldContent, generateComplianceRequirements } from "@/lib/api/ai.functions";
 
 const ROLES = [
   "Administrators", "Supervisors", "Caregivers", "Nurses",
@@ -19,6 +21,21 @@ const COMPLIANCE_MAP: Record<string, string[]> = {
 export function S1Organization() {
   const { data, update } = useDiscovery();
   const errors = useValidationErrors();
+  const [suggesting, setSuggesting] = useState<string | null>(null);
+
+  const suggest = async (field: "challenges" | "services" | "orgDescription") => {
+    if (!data.industry || !data.country) return;
+    setSuggesting(field);
+    try {
+      const result = await suggestFieldContent({ data: { field, industry: data.industry, country: data.country } });
+      update({ [field]: result.suggestion } as never);
+    } catch { /* silent */ } finally {
+      setSuggesting(null);
+    }
+  };
+
+  const canSuggest = !!(data.industry && data.country);
+
   return (
     <div className="space-y-6">
       <SectionHeader title="Organization Information" subtitle="A snapshot of your business so we can scope the right solution." />
@@ -42,10 +59,35 @@ export function S1Organization() {
         <Field label="Number of Clients"><TextInput type="number" value={data.clients} onChange={(e) => update({ clients: e.target.value })} placeholder="120" /></Field>
         <Field label="Number of Locations"><TextInput type="number" value={data.locations} onChange={(e) => update({ locations: e.target.value })} placeholder="3" /></Field>
       </div>
-      <Field label="Describe your organization"><TextArea value={data.orgDescription} onChange={(e) => update({ orgDescription: e.target.value })} placeholder="History, structure, size, regions served…" /></Field>
-      <Field label="What services do you provide?"><TextArea value={data.services} onChange={(e) => update({ services: e.target.value })} /></Field>
-      <Field label="What business challenges are you trying to solve?"><TextArea value={data.challenges} onChange={(e) => update({ challenges: e.target.value })} /></Field>
+      <div className="space-y-1.5">
+        <Field label="Describe your organization"><TextArea value={data.orgDescription} onChange={(e) => update({ orgDescription: e.target.value })} placeholder="History, structure, size, regions served…" /></Field>
+        {canSuggest && <AISuggestButton field="orgDescription" suggesting={suggesting} onSuggest={suggest} />}
+      </div>
+      <div className="space-y-1.5">
+        <Field label="What services do you provide?"><TextArea value={data.services} onChange={(e) => update({ services: e.target.value })} /></Field>
+        {canSuggest && <AISuggestButton field="services" suggesting={suggesting} onSuggest={suggest} />}
+      </div>
+      <div className="space-y-1.5">
+        <Field label="What business challenges are you trying to solve?"><TextArea value={data.challenges} onChange={(e) => update({ challenges: e.target.value })} /></Field>
+        {canSuggest && <AISuggestButton field="challenges" suggesting={suggesting} onSuggest={suggest} />}
+      </div>
     </div>
+  );
+}
+
+function AISuggestButton({ field, suggesting, onSuggest }: { field: "challenges" | "services" | "orgDescription"; suggesting: string | null; onSuggest: (f: "challenges" | "services" | "orgDescription") => void }) {
+  const active = suggesting === field;
+  return (
+    <button
+      type="button"
+      onClick={() => onSuggest(field)}
+      disabled={!!suggesting}
+      aria-label={`AI suggest content for ${field}`}
+      className="flex items-center gap-1.5 text-xs text-primary hover:underline disabled:opacity-50"
+    >
+      <span aria-hidden="true">✦</span>
+      {active ? "Generating suggestion…" : "AI Suggest"}
+    </button>
   );
 }
 
@@ -227,20 +269,51 @@ export function S7Approval() {
 export function S8Compliance() {
   const { data, update } = useDiscovery();
   const errors = useValidationErrors();
-  const standards = COMPLIANCE_MAP[data.complianceCountry] ?? [];
+  const [generating, setGenerating] = useState(false);
+  const [aiStandards, setAiStandards] = useState<string[]>([]);
+
+  const staticStandards = COMPLIANCE_MAP[data.complianceCountry] ?? [];
+  const allStandards = [...new Set([...staticStandards, ...aiStandards])];
+
+  const generateCompliance = async () => {
+    if (!data.complianceCountry) return;
+    setGenerating(true);
+    try {
+      const result = await generateComplianceRequirements({
+        data: { country: data.complianceCountry, industry: data.industry || "Healthcare" },
+      });
+      if (result.standards?.length) setAiStandards(result.standards);
+      if (result.requirements) update({ complianceRequirements: result.requirements });
+      if (result.retention) update({ retentionRecords: result.retention });
+    } catch { /* silent */ } finally {
+      setGenerating(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <SectionHeader title="Compliance & Regulations" />
       <Field label="Operating country" error={errors.complianceCountry}>
-        <Select value={data.complianceCountry} onChange={(e) => update({ complianceCountry: e.target.value })}>
+        <Select value={data.complianceCountry} onChange={(e) => { update({ complianceCountry: e.target.value }); setAiStandards([]); }}>
           <option value="">Select…</option>
           {COUNTRIES.map(c => <option key={c}>{c}</option>)}
         </Select>
       </Field>
-      {standards.length > 0 && (
+      {allStandards.length > 0 && (
         <div className="flex flex-wrap gap-2">
-          {standards.map(s => <span key={s} className="rounded-full border border-accent/40 bg-accent/10 px-3 py-1 text-xs text-accent">{s}</span>)}
+          {allStandards.map(s => <span key={s} className="rounded-full border border-accent/40 bg-accent/10 px-3 py-1 text-xs text-accent">{s}</span>)}
         </div>
+      )}
+      {data.complianceCountry && (
+        <button
+          type="button"
+          onClick={generateCompliance}
+          disabled={generating}
+          className="flex items-center gap-1.5 text-xs text-primary hover:underline disabled:opacity-50"
+        >
+          <span aria-hidden="true">✦</span>
+          {generating ? "Generating AI compliance data…" : "Generate AI compliance requirements"}
+        </button>
       )}
       <Field label="What compliance requirements must be met?">
         <TextArea value={data.complianceRequirements} onChange={(e) => update({ complianceRequirements: e.target.value })} />

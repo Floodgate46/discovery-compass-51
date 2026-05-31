@@ -1,8 +1,27 @@
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { getAdminSession, logoutAdmin, loginAdmin } from "@/lib/api/auth.functions";
-import { getSubmissions, getAnalytics } from "@/lib/api/admin.functions";
+import { getAdminSession, logoutAdmin } from "@/lib/api/auth.functions";
+import { getSubmissions, getAnalytics, exportSubmissions } from "@/lib/api/admin.functions";
 import { generateBRD } from "@/lib/pdf-generator";
+import { generateAnalyticsNarrative } from "@/lib/api/ai.functions";
+
+type Submission = { id: string; companyName: string | null; contactEmail: string | null; industry: string | null; country: string | null; submittedAt: Date; payload: unknown };
+
+function toCSV(rows: Submission[]): string {
+  const headers = ["ID", "Company", "Industry", "Country", "Email", "Submitted"];
+  const escape = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+  const body = rows.map((s) => [s.id, s.companyName, s.industry, s.country, s.contactEmail, new Date(s.submittedAt).toISOString()].map(escape).join(","));
+  return [headers.join(","), ...body].join("\n");
+}
+
+function downloadBlob(content: string, filename: string, mime: string) {
+  const a = Object.assign(document.createElement("a"), {
+    href: URL.createObjectURL(new Blob([content], { type: mime })),
+    download: filename,
+  });
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
 import type { DiscoveryData } from "@/lib/discovery-store";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell,
@@ -36,6 +55,35 @@ function AdminPage() {
   const [pages, setPages] = useState(totalPages);
   const [tab, setTab] = useState<"submissions" | "analytics">("submissions");
   const [loading, setLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [narrative, setNarrative] = useState("");
+  const [narrativeLoading, setNarrativeLoading] = useState(false);
+
+  const handleExport = async (format: "csv" | "json") => {
+    setExporting(true);
+    try {
+      const { submissions: all } = await exportSubmissions();
+      if (format === "csv") {
+        downloadBlob(toCSV(all as Submission[]), "submissions.csv", "text/csv");
+      } else {
+        downloadBlob(JSON.stringify(all, null, 2), "submissions.json", "application/json");
+      }
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleNarrative = async () => {
+    setNarrativeLoading(true);
+    try {
+      const result = await generateAnalyticsNarrative({ data: { analytics } });
+      setNarrative(result.narrative);
+    } catch {
+      setNarrative("Could not generate narrative. Please try again.");
+    } finally {
+      setNarrativeLoading(false);
+    }
+  };
 
   const fetchPage = async (p: number, s: string) => {
     setLoading(true);
@@ -83,15 +131,26 @@ function AdminPage() {
 
         {tab === "submissions" && (
           <>
-            <form onSubmit={handleSearch} className="mb-4 flex gap-2">
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search company, industry, country, email…"
-                className="flex-1 rounded-lg border border-border bg-input px-3.5 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/30"
-              />
-              <button type="submit" className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">Search</button>
-            </form>
+            <div className="mb-4 flex gap-2 flex-wrap items-center justify-between">
+              <form onSubmit={handleSearch} className="flex gap-2 flex-1 min-w-0">
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search company, industry, country, email…"
+                  aria-label="Search submissions"
+                  className="flex-1 rounded-lg border border-border bg-input px-3.5 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/30"
+                />
+                <button type="submit" className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">Search</button>
+              </form>
+              <div className="flex gap-2 shrink-0">
+                <button onClick={() => handleExport("csv")} disabled={exporting} className="rounded-lg border border-border bg-surface px-3 py-2 text-xs font-medium text-foreground hover:border-primary/30 disabled:opacity-50">
+                  {exporting ? "…" : "Export CSV"}
+                </button>
+                <button onClick={() => handleExport("json")} disabled={exporting} className="rounded-lg border border-border bg-surface px-3 py-2 text-xs font-medium text-foreground hover:border-primary/30 disabled:opacity-50">
+                  {exporting ? "…" : "Export JSON"}
+                </button>
+              </div>
+            </div>
 
             <div className="glass-card rounded-xl overflow-hidden">
               <table className="w-full text-sm">
@@ -139,6 +198,19 @@ function AdminPage() {
 
         {tab === "analytics" && (
           <div className="space-y-8">
+            <div className="glass-card rounded-xl p-5 flex items-start justify-between gap-4">
+              <div className="flex-1">
+                <div className="text-sm font-medium flex items-center gap-2 mb-2">
+                  <span className="text-primary">✦</span> AI Trend Summary
+                </div>
+                {narrativeLoading && <p className="text-sm text-muted-foreground">Generating summary…</p>}
+                {!narrativeLoading && narrative && <p className="text-sm text-foreground/90 leading-relaxed">{narrative}</p>}
+                {!narrativeLoading && !narrative && <p className="text-sm text-muted-foreground">Generate an AI-written summary of submission trends.</p>}
+              </div>
+              <button onClick={handleNarrative} disabled={narrativeLoading} className="shrink-0 rounded-lg border border-primary/40 bg-primary/10 px-3 py-2 text-xs font-medium text-primary hover:bg-primary/15 disabled:opacity-50">
+                {narrativeLoading ? "Generating…" : narrative ? "Regenerate" : "Generate"}
+              </button>
+            </div>
             <div className="grid sm:grid-cols-3 gap-4">
               {[
                 { label: "Total Submissions", value: analytics.total },

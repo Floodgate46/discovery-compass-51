@@ -40,6 +40,15 @@ export const getSubmissions = createServerFn({ method: "GET" })
     return { submissions, total, pages: Math.ceil(total / PAGE_SIZE) };
   });
 
+export const exportSubmissions = createServerFn({ method: "GET" }).handler(async () => {
+  const { prisma } = await import("../prisma.server");
+  const submissions = await prisma.discoverySubmission.findMany({
+    orderBy: { submittedAt: "desc" },
+    select: { id: true, companyName: true, contactEmail: true, industry: true, country: true, submittedAt: true, payload: true },
+  });
+  return { submissions };
+});
+
 export const getAnalytics = createServerFn({ method: "GET" }).handler(async () => {
   const { prisma } = await import("../prisma.server");
 
