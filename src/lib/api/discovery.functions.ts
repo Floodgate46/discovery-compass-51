@@ -111,7 +111,7 @@ export const submitDiscovery = createServerFn({ method: "POST" })
     let emailSent = false;
     let emailError = "";
     try {
-      const email = await sendSubmissionEmail(data, id);
+      const email = await sendSubmissionEmail(data as unknown as import("../discovery-store").DiscoveryData, id);
       emailSent = email.sent;
       if (!email.sent) emailError = email.reason ?? "Email not sent";
     } catch (error) {

@@ -216,7 +216,7 @@ function AdminPage() {
                 { label: "Total Submissions", value: analytics.total },
                 { label: "Industries", value: analytics.byIndustry.length },
                 { label: "Countries", value: analytics.byCountry.length },
-              ].map((s) => (
+              ].map((s: { label: string; value: number }) => (
                 <div key={s.label} className="glass-card rounded-xl p-5">
                   <div className="text-xs uppercase tracking-wider text-muted-foreground">{s.label}</div>
                   <div className="mt-1 text-3xl font-semibold">{s.value}</div>
@@ -242,7 +242,7 @@ function AdminPage() {
                 <ResponsiveContainer width="100%" height={220}>
                   <PieChart>
                     <Pie data={analytics.byCountry} dataKey="count" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
-                      {analytics.byCountry.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                      {analytics.byCountry.map((_: unknown, i: number) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                     </Pie>
                     <Tooltip />
                   </PieChart>

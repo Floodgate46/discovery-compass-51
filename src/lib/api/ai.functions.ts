@@ -107,7 +107,7 @@ export const generateAnalyticsNarrative = createServerFn({ method: "POST" })
 export const checkConsistency = createServerFn({ method: "POST" })
   .inputValidator(z.object({ data: z.record(z.unknown()) }))
   .handler(async ({ data: { data } }) => {
-    const summary = buildDataSummary(data as DiscoveryData);
+    const summary = buildDataSummary(data as unknown as DiscoveryData);
     const content = await callOpenRouter([
       {
         role: "system",
@@ -131,8 +131,8 @@ export const checkConsistency = createServerFn({ method: "POST" })
 export const generateAIBRD = createServerFn({ method: "POST" })
   .inputValidator(z.object({ data: z.record(z.unknown()) }))
   .handler(async ({ data: { data } }) => {
-    const summary = buildDataSummary(data as DiscoveryData);
-    const d = data as DiscoveryData;
+    const summary = buildDataSummary(data as unknown as DiscoveryData);
+    const d = data as unknown as DiscoveryData;
 
     const content = await callOpenRouter([
       {
@@ -167,8 +167,8 @@ export const chatWithData = createServerFn({ method: "POST" })
     history: z.array(z.object({ role: z.enum(["user", "assistant"]), content: z.string() })).default([]),
   }))
   .handler(async ({ data: { message, data, history } }) => {
-    const summary = buildDataSummary(data as DiscoveryData);
-    const d = data as DiscoveryData;
+    const summary = buildDataSummary(data as unknown as DiscoveryData);
+    const d = data as unknown as DiscoveryData;
 
     const reply = await callOpenRouter([
       {
