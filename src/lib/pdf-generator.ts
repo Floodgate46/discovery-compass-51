@@ -19,11 +19,24 @@ async function loadImageAsDataUrl(url: string): Promise<string | null> {
 
 function stripMd(text: string): string {
   return text
+    // markdown
     .replace(/\*\*(.+?)\*\*/g, "$1")
     .replace(/\*(.+?)\*/g, "$1")
     .replace(/^#{1,6}\s+/gm, "")
     .replace(/^[-*]\s+/gm, "• ")
     .replace(/`(.+?)`/g, "$1")
+    // Unicode typography → ASCII (jsPDF Helvetica only covers Latin-1)
+    .replace(/[‘’ʼ]/g, "'")   // smart single quotes / apostrophe
+    .replace(/[“”]/g, '"')          // smart double quotes
+    .replace(/—|―/g, " - ")         // em dash / horizontal bar
+    .replace(/–/g, "-")                  // en dash
+    .replace(/…/g, "...")                // ellipsis
+    .replace(/ | | /g, " ")    // non-breaking / narrow spaces
+    .replace(/•|‣|◦/g, "•")    // various bullet chars → latin bullet
+    .replace(/−/g, "-")                  // minus sign
+    .replace(/[‐‑]/g, "-")          // hyphens
+    .replace(/[^\x00-\xFF]/g, "")            // drop anything outside Latin-1
+    // whitespace
     .replace(/[^\S\n]+/g, " ")
     .trim();
 }

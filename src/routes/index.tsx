@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useDiscovery, SECTIONS } from "@/lib/discovery-store";
+import heroImage from "@/assets/q-hero.png";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -20,7 +21,7 @@ function Landing() {
 
   return (
     <main className="relative min-h-screen overflow-hidden">
-      <BackgroundOrbs />
+      <HeroBackground />
       <header className="relative z-10 mx-auto flex max-w-7xl items-center justify-between px-6 py-6">
         <div className="flex items-center gap-2.5">
           <Logo />
@@ -127,11 +128,22 @@ function Logo() {
   );
 }
 
-function BackgroundOrbs() {
+function HeroBackground() {
   return (
-    <>
-      <div className="pointer-events-none absolute -top-40 left-1/2 h-[500px] w-[800px] -translate-x-1/2 rounded-full bg-primary/15 blur-3xl" />
-      <div className="pointer-events-none absolute top-1/3 -right-40 h-[400px] w-[400px] rounded-full bg-accent/10 blur-3xl" />
-    </>
+    <div className="pointer-events-none absolute inset-x-0 top-0 z-0 h-[720px] overflow-hidden">
+      <img
+        src={heroImage}
+        alt=""
+        aria-hidden="true"
+        className="h-full w-full object-cover object-center"
+        style={{ opacity: 0.38 }}
+      />
+      {/* bottom fade into page background */}
+      <div className="absolute inset-0 bg-gradient-to-b from-background/10 via-background/55 to-background" />
+      {/* subtle side vignette */}
+      <div className="absolute inset-0 bg-gradient-to-r from-background/50 via-transparent to-background/50" />
+      {/* top darkening so nav text stays readable */}
+      <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-background/70 to-transparent" />
+    </div>
   );
 }
