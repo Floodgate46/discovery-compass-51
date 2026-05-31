@@ -1,6 +1,6 @@
 import jsPDF from "jspdf";
 import type { DiscoveryData } from "./discovery-store";
-import coverImage from "@/assets/brd-cover.jpg";
+import coverImage from "@/assets/brd-cover.jpg?url";
 
 async function loadImageAsDataUrl(url: string): Promise<string | null> {
   try {

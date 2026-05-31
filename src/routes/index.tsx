@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useDiscovery, SECTIONS } from "@/lib/discovery-store";
-import heroImage from "@/assets/q-hero.png";
+import heroImage from "@/assets/q-hero.png?url";
 
 export const Route = createFileRoute("/")({
   head: () => ({
