@@ -82,11 +82,11 @@ function AISuggestButton({ field, suggesting, onSuggest }: { field: "challenges"
       type="button"
       onClick={() => onSuggest(field)}
       disabled={!!suggesting}
-      aria-label={`AI suggest content for ${field}`}
+      aria-label={`Smart fill content for ${field}`}
       className="flex items-center gap-1.5 text-xs text-primary hover:underline disabled:opacity-50"
     >
       <span aria-hidden="true">✦</span>
-      {active ? "Generating suggestion…" : "AI Suggest"}
+      {active ? "Filling in…" : "Smart Fill"}
     </button>
   );
 }
@@ -312,7 +312,7 @@ export function S8Compliance() {
           className="flex items-center gap-1.5 text-xs text-primary hover:underline disabled:opacity-50"
         >
           <span aria-hidden="true">✦</span>
-          {generating ? "Generating AI compliance data…" : "Generate AI compliance requirements"}
+          {generating ? "Fetching compliance data…" : "Auto-fill compliance requirements"}
         </button>
       )}
       <Field label="What compliance requirements must be met?">

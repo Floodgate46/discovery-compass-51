@@ -201,11 +201,11 @@ function AdminPage() {
             <div className="glass-card rounded-xl p-5 flex items-start justify-between gap-4">
               <div className="flex-1">
                 <div className="text-sm font-medium flex items-center gap-2 mb-2">
-                  <span className="text-primary">✦</span> AI Trend Summary
+                  <span className="text-primary">✦</span> Trend Summary
                 </div>
                 {narrativeLoading && <p className="text-sm text-muted-foreground">Generating summary…</p>}
                 {!narrativeLoading && narrative && <p className="text-sm text-foreground/90 leading-relaxed">{narrative}</p>}
-                {!narrativeLoading && !narrative && <p className="text-sm text-muted-foreground">Generate an AI-written summary of submission trends.</p>}
+                {!narrativeLoading && !narrative && <p className="text-sm text-muted-foreground">Generate a summary of submission trends.</p>}
               </div>
               <button onClick={handleNarrative} disabled={narrativeLoading} className="shrink-0 rounded-lg border border-primary/40 bg-primary/10 px-3 py-2 text-xs font-medium text-primary hover:bg-primary/15 disabled:opacity-50">
                 {narrativeLoading ? "Generating…" : narrative ? "Regenerate" : "Generate"}

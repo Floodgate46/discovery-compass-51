@@ -75,7 +75,7 @@ function ReviewPage() {
       const result = await generateAIBRD({ data: { data: data as unknown as Record<string, unknown> } });
       setAiBRD(result.content);
     } catch {
-      setAiBRD("Failed to generate AI analysis. Please try again.");
+      setAiBRD("Failed to generate analysis. Please try again.");
     } finally {
       setGeneratingBRD(false);
     }
@@ -148,14 +148,14 @@ function ReviewPage() {
         {checkingConsistency && (
           <div className="mb-6 glass-card rounded-xl p-4 flex items-center gap-3 text-sm text-muted-foreground">
             <svg className="h-4 w-4 animate-spin" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="2" strokeDasharray="28" strokeDashoffset="10" /></svg>
-            Running AI consistency check…
+            Reviewing your responses for consistency…
           </div>
         )}
         {!checkingConsistency && issues && issues.length > 0 && (
           <div className="mb-6 glass-card rounded-xl p-5 space-y-3">
             <div className="text-sm font-medium flex items-center gap-2">
               <svg viewBox="0 0 16 16" className="h-4 w-4 text-amber-400" fill="currentColor"><path d="M8 1L1 14h14L8 1zm0 3l4.5 8h-9L8 4zm0 3v2m0 2v1" stroke="currentColor" strokeWidth="1.2" fill="none" strokeLinecap="round" /></svg>
-              AI Consistency Check
+              Consistency Review
             </div>
             {issues.map((issue, i) => (
               <div key={i} className={`flex items-start gap-2.5 rounded-lg px-3 py-2.5 text-sm ${issue.severity === "warning" ? "border border-amber-500/30 bg-amber-500/10 text-amber-200" : "border border-border bg-surface text-muted-foreground"}`}>
@@ -168,7 +168,7 @@ function ReviewPage() {
         {!checkingConsistency && issues && issues.length === 0 && (
           <div className="mb-6 glass-card rounded-xl p-4 flex items-center gap-2 text-sm text-success">
             <svg viewBox="0 0 12 12" className="h-3.5 w-3.5"><path d="M2 6l3 3 5-6" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" /></svg>
-            AI consistency check passed — no issues found.
+            Consistency check passed — no issues found.
           </div>
         )}
 
@@ -203,14 +203,14 @@ function ReviewPage() {
           <div className="glass-card rounded-2xl p-6 md:p-8 mb-10">
             <div className="flex items-center justify-between mb-4">
               <div className="text-sm font-semibold flex items-center gap-2">
-                <span className="text-primary">✦</span> AI-Generated Analysis
+                <span className="text-primary">✦</span> Smart Analysis
               </div>
               <button onClick={() => setShowAiBRD(false)} className="text-xs text-muted-foreground hover:text-foreground">Hide</button>
             </div>
             {generatingBRD ? (
               <div className="flex items-center gap-3 text-sm text-muted-foreground py-4">
                 <svg className="h-4 w-4 animate-spin" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="2" strokeDasharray="28" strokeDashoffset="10" /></svg>
-                Generating AI analysis…
+                Generating analysis…
               </div>
             ) : (
               <pre className="whitespace-pre-wrap text-sm text-foreground/90 leading-relaxed font-sans">{aiBRD}</pre>
@@ -248,14 +248,14 @@ function ReviewPage() {
             className="inline-flex items-center gap-2 rounded-xl border border-primary/40 bg-primary/10 px-6 py-3.5 text-sm font-semibold text-primary transition hover:bg-primary/15 disabled:opacity-60"
           >
             <span>✦</span>
-            {generatingBRD ? "Generating…" : "AI Analysis"}
+            {generatingBRD ? "Generating…" : "Smart Analysis"}
           </button>
           <button
             onClick={() => setChatOpen(true)}
             className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-6 py-3.5 text-sm font-semibold text-foreground transition hover:border-primary/30"
           >
             <svg viewBox="0 0 16 16" className="h-4 w-4"><path d="M2 2h12v9H9l-3 3v-3H2V2z" stroke="currentColor" strokeWidth="1.4" fill="none" strokeLinejoin="round" /></svg>
-            Ask AI
+            Ask anything
           </button>
           <button
             onClick={handleSubmit}
@@ -299,7 +299,7 @@ function ReviewPage() {
           <div className="relative z-10 w-full sm:w-96 h-[520px] glass-card rounded-2xl flex flex-col shadow-2xl">
             <div className="flex items-center justify-between px-4 py-3 border-b border-border">
               <div className="text-sm font-semibold flex items-center gap-2">
-                <span className="text-primary">✦</span> Ask about your discovery
+                <span className="text-primary">✦</span> Ask about your responses
               </div>
               <button onClick={() => setChatOpen(false)} className="text-muted-foreground hover:text-foreground text-lg leading-none">×</button>
             </div>
