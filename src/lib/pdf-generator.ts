@@ -1,6 +1,16 @@
 import jsPDF from "jspdf";
 import type { DiscoveryData } from "./discovery-store";
 
+function stripMd(text: string): string {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, "$1")  // **bold**
+    .replace(/\*(.+?)\*/g, "$1")       // *italic*
+    .replace(/^#{1,6}\s+/gm, "")       // # headings
+    .replace(/^[-*]\s+/gm, "• ")       // - bullet → •
+    .replace(/`(.+?)`/g, "$1")         // `code`
+    .trim();
+}
+
 export function generateBRD(data: DiscoveryData) {
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const W = doc.internal.pageSize.getWidth();
@@ -24,7 +34,8 @@ export function generateBRD(data: DiscoveryData) {
   };
   const p = (t: string) => {
     doc.setFont("helvetica", "normal"); doc.setFontSize(10.5); doc.setTextColor(40, 45, 60);
-    const lines = doc.splitTextToSize(t || "—", W - M * 2);
+    const clean = stripMd(t || "—");
+    const lines = doc.splitTextToSize(clean, W - M * 2);
     for (const line of lines) { ensure(14); doc.text(line, M, y); y += 14; }
     y += 4;
   };

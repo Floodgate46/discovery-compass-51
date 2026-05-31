@@ -78,12 +78,12 @@ export const suggestFieldContent = createServerFn({ method: "POST" })
   }))
   .handler(async ({ data }) => {
     const prompts: Record<string, string> = {
-      challenges: `List 3-4 specific business challenges typically faced by a ${data.industry} in ${data.country}. Be concrete and operational. 2-3 sentences total.`,
-      services: `Describe the typical services provided by a ${data.industry} in ${data.country}. Be specific to the industry. 2-3 sentences.`,
-      orgDescription: `Write a concise organisational overview template for a ${data.industry} operating in ${data.country}. 2-3 sentences.`,
+      challenges: `List 3-4 specific business challenges typically faced by a ${data.industry} in ${data.country}. Be concrete and operational. 2-3 sentences of plain prose, no bullet points or markdown.`,
+      services: `Describe the typical services provided by a ${data.industry} in ${data.country}. Be specific. 2-3 sentences of plain prose, no bullet points or markdown.`,
+      orgDescription: `Write a concise organisational overview for a ${data.industry} in ${data.country}. 2-3 sentences of plain prose. No headings, no bullet points, no markdown formatting.`,
     };
     const suggestion = await callOpenRouter([
-      { role: "system", content: "You are a healthcare business analyst. Write concise, industry-specific content that the user can edit." },
+      { role: "system", content: "You are a healthcare business analyst. Write plain prose only — no markdown, no bullet points, no asterisks, no headings." },
       { role: "user", content: prompts[data.field] },
     ], 200);
     return { suggestion };
@@ -137,7 +137,7 @@ export const generateAIBRD = createServerFn({ method: "POST" })
     const content = await callOpenRouter([
       {
         role: "system",
-        content: `You are a senior business analyst specialising in healthcare workforce management software. Generate a professional Business Requirements Document section. Be specific, actionable, and concise. Use plain text, no markdown headers.`,
+        content: `You are a senior business analyst specialising in healthcare workforce management software. Generate a professional Business Requirements Document section. Be specific, actionable, and concise. Return plain text only — no asterisks, no markdown formatting, no bold/italic syntax. Use numbered sections and simple bullet points starting with a dash (-).`,
       },
       {
         role: "user",
