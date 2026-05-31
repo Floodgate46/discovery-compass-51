@@ -17,6 +17,7 @@ function ReviewPage() {
   const [submitted, setSubmitted] = useState(false);
   const [submissionId, setSubmissionId] = useState("");
   const [emailSent, setEmailSent] = useState(false);
+  const [emailError, setEmailError] = useState("");
   const [saved, setSaved] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
@@ -57,6 +58,7 @@ function ReviewPage() {
       const result = await submitDiscovery({ data });
       setSubmissionId(result.id);
       setEmailSent(result.emailSent);
+      setEmailError(result.emailError ?? "");
       setSaved(result.saved);
       setSubmitted(true);
     } catch {
@@ -275,7 +277,10 @@ function ReviewPage() {
             <div className="text-sm font-medium text-success">
               {emailSent
                 ? `Thank you! Your discovery was emailed to support@jetechltd.com.ng${saved ? " and saved" : ""}.`
-                : "Thank you! Your discovery was received for solution design."}
+                : `Thank you! Your discovery was received for solution design.${saved ? " (Saved to database.)" : ""}`}
+            {!emailSent && emailError && (
+              <div className="mt-1 text-xs text-amber-400">Email note: {emailError}</div>
+            )}
             </div>
             {submissionId && <div className="mt-2 text-xs text-muted-foreground">Reference: {submissionId}</div>}
             <button onClick={() => { reset(); setSubmitted(false); setSubmissionId(""); setEmailSent(false); setSaved(false); }} className="mt-3 text-xs text-muted-foreground hover:text-foreground underline">Start a new discovery</button>

@@ -3,11 +3,12 @@ import type { DiscoveryData } from "./discovery-store";
 
 function stripMd(text: string): string {
   return text
-    .replace(/\*\*(.+?)\*\*/g, "$1")  // **bold**
-    .replace(/\*(.+?)\*/g, "$1")       // *italic*
-    .replace(/^#{1,6}\s+/gm, "")       // # headings
-    .replace(/^[-*]\s+/gm, "• ")       // - bullet → •
-    .replace(/`(.+?)`/g, "$1")         // `code`
+    .replace(/\*\*(.+?)\*\*/g, "$1")
+    .replace(/\*(.+?)\*/g, "$1")
+    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/^[-*]\s+/gm, "• ")
+    .replace(/`(.+?)`/g, "$1")
+    .replace(/[^\S\n]+/g, " ")   // collapse all non-newline whitespace (incl. non-breaking spaces)
     .trim();
 }
 
@@ -32,11 +33,20 @@ export function generateBRD(data: DiscoveryData) {
     doc.setFont("helvetica", "bold"); doc.setFontSize(13); doc.setTextColor(10, 110, 140);
     doc.text(t, M, y); y += 18;
   };
+  const TW = W - M * 2; // text column width
   const p = (t: string) => {
     doc.setFont("helvetica", "normal"); doc.setFontSize(10.5); doc.setTextColor(40, 45, 60);
     const clean = stripMd(t || "—");
-    const lines = doc.splitTextToSize(clean, W - M * 2);
-    for (const line of lines) { ensure(14); doc.text(line, M, y); y += 14; }
+    // Split on explicit newlines first, then wrap each paragraph
+    const paragraphs = clean.split(/\n+/);
+    for (const para of paragraphs) {
+      const lines = doc.splitTextToSize(para.trim() || " ", TW - 2);
+      for (const line of lines) {
+        ensure(14);
+        doc.text(line, M, y, { maxWidth: TW });
+        y += 14;
+      }
+    }
     y += 4;
   };
   const kv = (rows: Array<[string, string]>) => {
@@ -45,8 +55,8 @@ export function generateBRD(data: DiscoveryData) {
       ensure(16);
       doc.setFont("helvetica", "bold"); doc.setTextColor(70, 80, 100); doc.text(`${k}:`, M, y);
       doc.setFont("helvetica", "normal"); doc.setTextColor(30, 35, 50);
-      const lines = doc.splitTextToSize(v || "—", W - M * 2 - 140);
-      doc.text(lines, M + 140, y);
+      const lines = doc.splitTextToSize(stripMd(v || "—"), TW - 142);
+      doc.text(lines, M + 140, y, { maxWidth: TW - 142 });
       y += Math.max(14, lines.length * 13) + 2;
     }
     y += 4;

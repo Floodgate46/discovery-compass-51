@@ -109,11 +109,14 @@ export const submitDiscovery = createServerFn({ method: "POST" })
     }
 
     let emailSent = false;
+    let emailError = "";
     try {
       const email = await sendSubmissionEmail(data, id);
       emailSent = email.sent;
+      if (!email.sent) emailError = email.reason ?? "Email not sent";
     } catch (error) {
-      console.error(error);
+      console.error("Email send error:", error);
+      emailError = error instanceof Error ? error.message : "Email failed";
     }
 
     return {
@@ -121,5 +124,6 @@ export const submitDiscovery = createServerFn({ method: "POST" })
       submittedAt: submittedAt.toISOString(),
       saved,
       emailSent,
+      emailError,
     };
   });
