@@ -80,6 +80,10 @@ export async function generateBRD(data: DiscoveryData) {
 
   // Cover
   doc.setFillColor(15, 30, 55); doc.rect(0, 0, W, 160, "F");
+  const coverData = await loadImageAsDataUrl(coverImage);
+  if (coverData) {
+    try { doc.addImage(coverData, "JPEG", W - 200, 20, 160, 120); } catch { /* ignore */ }
+  }
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold"); doc.setFontSize(22);
   doc.text("Business Requirements Document", M, 80);
