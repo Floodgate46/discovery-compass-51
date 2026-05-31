@@ -28,7 +28,7 @@ function stripMd(text: string): string {
     .trim();
 }
 
-export function generateBRD(data: DiscoveryData) {
+export async function generateBRD(data: DiscoveryData) {
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const W = doc.internal.pageSize.getWidth();
   const H = doc.internal.pageSize.getHeight();
