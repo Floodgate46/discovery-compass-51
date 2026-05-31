@@ -171,7 +171,7 @@ function AdminPage() {
                       <td className="px-4 py-3 text-muted-foreground text-xs">{new Date(s.submittedAt).toLocaleDateString()}</td>
                       <td className="px-4 py-3">
                         <button
-                          onClick={() => generateBRD(s.payload as unknown as DiscoveryData)}
+                          onClick={() => void generateBRD(s.payload as unknown as DiscoveryData)}
                           className="text-xs text-primary hover:underline"
                         >
                           PDF

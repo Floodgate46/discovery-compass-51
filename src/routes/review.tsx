@@ -236,7 +236,7 @@ function ReviewPage() {
         {/* Actions */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 flex-wrap">
           <button
-            onClick={() => generateBRD(data)}
+            onClick={() => void generateBRD(data)}
             className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3.5 text-sm font-semibold text-primary-foreground shadow-glow transition hover:scale-[1.02]"
           >
             <svg viewBox="0 0 16 16" className="h-4 w-4"><path d="M8 1v10m0 0l-4-4m4 4l4-4M2 15h12" stroke="currentColor" strokeWidth="1.75" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>
