@@ -22,7 +22,7 @@ async function extractPdf(file: File): Promise<string> {
   for (let i = 1; i <= doc.numPages; i++) {
     const page = await doc.getPage(i);
     const content = await page.getTextContent();
-    parts.push(content.items.map((it: { str?: string }) => it.str ?? "").join(" "));
+    parts.push(content.items.map((it) => ("str" in it ? it.str : "")).join(" "));
   }
   return parts.join("\n\n");
 }
