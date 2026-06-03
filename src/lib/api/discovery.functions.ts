@@ -100,7 +100,7 @@ export const submitDiscovery = createServerFn({ method: "POST" })
             contactEmail: data.contactEmail || null,
             industry: data.industry || null,
             country: data.country || null,
-            payload: data,
+            payload: data as never,
           },
           select: {
             id: true,
