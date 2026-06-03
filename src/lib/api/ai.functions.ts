@@ -222,11 +222,11 @@ Be faithful to the document. Do not invent numbers. If a value is partially pres
       const cleaned = content.trim().replace(/^```json\s*/i, "").replace(/```\s*$/, "");
       const parsed = JSON.parse(cleaned) as { extracted?: Record<string, unknown>; missing?: string[]; summary?: string };
       return {
-        extracted: parsed.extracted ?? {},
+        extracted: (parsed.extracted ?? {}) as Record<string, string | string[] | Record<string, string>>,
         missing: Array.isArray(parsed.missing) ? parsed.missing : [],
         summary: parsed.summary ?? "",
       };
     } catch {
-      return { extracted: {}, missing: fieldList, summary: content.slice(0, 800) };
+      return { extracted: {} as Record<string, string | string[] | Record<string, string>>, missing: fieldList, summary: content.slice(0, 800) };
     }
   });
