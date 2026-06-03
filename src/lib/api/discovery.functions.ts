@@ -71,6 +71,14 @@ const discoveryDataSchema = z.object({
   integrations: stringArray,
   customIntegrations: z.string(),
   futureCapabilities: stringArray,
+  realEstate: z.object({
+    uploadedFileName: z.string(),
+    documentText: z.string(),
+    extracted: z.record(z.unknown()),
+    missing: z.array(z.string()),
+    summary: z.string(),
+    lastExtractedAt: z.string(),
+  }).optional().default({ uploadedFileName: "", documentText: "", extracted: {}, missing: [], summary: "", lastExtractedAt: "" }),
   lastSaved: z.string(),
 });
 
@@ -79,7 +87,7 @@ export const submitDiscovery = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { sendSubmissionEmail } = await import("../email.server");
 
-    let id = crypto.randomUUID();
+    let id: string = crypto.randomUUID();
     let submittedAt = new Date();
     let saved = false;
 
@@ -92,7 +100,7 @@ export const submitDiscovery = createServerFn({ method: "POST" })
             contactEmail: data.contactEmail || null,
             industry: data.industry || null,
             country: data.country || null,
-            payload: data,
+            payload: data as never,
           },
           select: {
             id: true,
