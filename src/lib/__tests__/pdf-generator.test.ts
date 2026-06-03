@@ -76,7 +76,6 @@ const baseData: DiscoveryData = {
   integrations: [],
   customIntegrations: "",
   futureCapabilities: [],
-  realEstate: { uploadedFileName: "", documentText: "", extracted: {}, missing: [], summary: "", lastExtractedAt: "" },
   lastSaved: "",
 };
 

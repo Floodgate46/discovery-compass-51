@@ -108,16 +108,6 @@ export interface DiscoveryData {
   // Section 15
   futureCapabilities: string[];
 
-  // Section 16 — Real Estate (document-driven, AI-assisted)
-  realEstate: {
-    uploadedFileName: string;
-    documentText: string;
-    extracted: Record<string, unknown>;
-    missing: string[];
-    summary: string;
-    lastExtractedAt: string;
-  };
-
   // Meta
   lastSaved: string;
 }
@@ -182,14 +172,6 @@ const initialData: DiscoveryData = {
   integrations: [],
   customIntegrations: "",
   futureCapabilities: [],
-  realEstate: {
-    uploadedFileName: "",
-    documentText: "",
-    extracted: {},
-    missing: [],
-    summary: "",
-    lastExtractedAt: "",
-  },
   lastSaved: "",
 };
 
@@ -233,5 +215,4 @@ export const SECTIONS = [
   { id: "notifications", title: "Notifications", subtitle: "Communication channels" },
   { id: "integrations", title: "Integrations", subtitle: "Connected systems" },
   { id: "roadmap", title: "Future Roadmap", subtitle: "Vision & innovation" },
-  { id: "realestate", title: "Real Estate Profile", subtitle: "Upload your company doc — AI extracts & summarises" },
 ] as const;
