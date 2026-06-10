@@ -278,7 +278,7 @@ function ReviewPage() {
           <div className="mt-6 mx-auto max-w-xl glass-card rounded-xl p-5 text-center">
             <div className="text-sm font-medium text-success">
               {emailSent
-                ? `Thank you! Your discovery was emailed to support@jetechltd.com.ng${saved ? " and saved" : ""}.`
+                ? `Thank you! Your discovery was emailed to the project team${saved ? " and saved" : ""}.`
                 : `Thank you! Your discovery was received for solution design.${saved ? " (Saved to database.)" : ""}`}
             {!emailSent && emailError && (
               <div className="mt-1 text-xs text-amber-400">Email note: {emailError}</div>

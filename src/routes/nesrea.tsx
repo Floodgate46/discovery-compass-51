@@ -4,7 +4,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { useNesrea } from "@/lib/nesrea-store";
 import { GENERAL_SECTIONS, DEPARTMENTS, FINAL_SECTION, type NQ } from "@/lib/nesrea-questions";
 import { useVoiceInput } from "@/components/nesrea/voice-input";
-import { nesreaPolish, nesreaSuggest, nesreaSummarize } from "@/lib/api/nesrea.functions";
+import { nesreaPolish, nesreaSuggest, submitNesrea } from "@/lib/api/nesrea.functions";
+import { generateNesreaBrief } from "@/lib/nesrea-pdf-generator";
 
 export const Route = createFileRoute("/nesrea")({
   head: () => ({ meta: [
@@ -30,8 +31,14 @@ function NesreaPortal() {
 
   const [stepIdx, setStepIdx] = useState(0);
   const [report, setReport] = useState<{ summary: string; gaps: string[]; opportunities: string[] } | null>(null);
+  const [submissionId, setSubmissionId] = useState("");
+  const [emailSent, setEmailSent] = useState(false);
+  const [emailError, setEmailError] = useState("");
+  const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState("");
+  const [submitError, setSubmitError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const summarize = useServerFn(nesreaSummarize);
+  const submit = useServerFn(submitNesrea);
 
   if (!dept) {
     return (
@@ -76,10 +83,56 @@ function NesreaPortal() {
           </ul>
         </section>
 
-        <div className="mt-6 flex gap-3">
+        {submitError && (
+          <div className="mt-4 rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
+            {submitError}
+          </div>
+        )}
+
+        <div className="mt-6 flex flex-wrap gap-3">
+          <button
+            onClick={() => void generateNesreaBrief(dept.code, dept.label, answers, report)}
+            className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-glow"
+          >
+            Download intake brief (PDF)
+          </button>
           <button onClick={() => setReport(null)} className="rounded-lg border border-border px-4 py-2 text-sm hover:border-primary/40">Back to answers</button>
-          <button onClick={() => { reset(); setReport(null); setStepIdx(0); }} className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">Start a new submission</button>
+          <button
+            onClick={() => {
+              reset();
+              setReport(null);
+              setSubmissionId("");
+              setEmailSent(false);
+              setEmailError("");
+              setSaved(false);
+              setSaveError("");
+              setSubmitError("");
+              setStepIdx(0);
+            }}
+            className="rounded-lg border border-border px-4 py-2 text-sm hover:border-primary/40"
+          >
+            Start a new submission
+          </button>
         </div>
+
+        {(emailSent || saved || emailError || saveError) && (
+          <div className="mt-4 glass-card rounded-xl p-4 text-sm">
+            {emailSent ? (
+              <div className="text-success">Your submission was emailed to the project team{saved ? " and saved" : ""}.</div>
+            ) : (
+              <div className="text-foreground">Your submission was received{saved ? " and saved" : ""}.</div>
+            )}
+            {!emailSent && emailError && (
+              <div className="mt-1 text-xs text-amber-400">Email note: {emailError}</div>
+            )}
+            {!saved && saveError && (
+              <div className="mt-1 text-xs text-amber-400">Dashboard note: {saveError}</div>
+            )}
+            {submissionId && (
+              <div className="mt-2 text-xs text-muted-foreground">Reference: {submissionId}</div>
+            )}
+          </div>
+        )}
       </main>
     );
   }
@@ -89,11 +142,25 @@ function NesreaPortal() {
 
   const onSubmit = async () => {
     setSubmitting(true);
+    setSubmitError("");
     try {
-      const result = await summarize({ data: { department: dept.code, answers } });
-      setReport(result);
+      const result = await submit({
+        data: {
+          department: dept.code,
+          departmentLabel: dept.label,
+          answers,
+        },
+      });
+      setReport(result.report);
+      setSubmissionId(result.id);
+      setEmailSent(result.emailSent);
+      setEmailError(result.emailError ?? "");
+      setSaved(result.saved);
+      setSaveError(result.saveError ?? "");
     } catch (e) {
-      alert("Could not submit: " + (e instanceof Error ? e.message : "unknown error"));
+      const message = e instanceof Error ? e.message : "unknown error";
+      setSubmitError(message);
+      alert("Could not submit: " + message);
     } finally { setSubmitting(false); }
   };
 

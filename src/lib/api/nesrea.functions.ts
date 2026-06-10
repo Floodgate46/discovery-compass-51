@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { ensureDatabaseUrl } from "../env.server";
 
 async function callOpenRouter(messages: { role: string; content: string }[], maxTokens = 600) {
   const apiKey = process.env.OPENROUTER_API_KEY;
@@ -50,21 +51,105 @@ export const nesreaSuggest = createServerFn({ method: "POST" })
     return { suggestion: suggestion.trim() };
   });
 
-// Submit: produces an executive summary + missing-info list for the whole questionnaire
+async function summarizeNesreaAnswers(department: string, answers: Record<string, string>) {
+  const summary = await callOpenRouter([
+    { role: "system", content: "You are a senior consultant from Floodgate Digital / Jetech preparing an intake brief for NESREA ONE. Given a department's questionnaire answers, return a JSON object {summary: string, gaps: string[], opportunities: string[]}. summary = 5-7 sentence executive synthesis; gaps = up to 8 critical missing/weak answers; opportunities = up to 8 highest-impact platform interventions. JSON ONLY." },
+    { role: "user", content: `Department: ${department}\nAnswers JSON:\n${JSON.stringify(answers).slice(0, 60000)}` },
+  ], 1500);
+  try {
+    const cleaned = summary.trim().replace(/^```json\s*/i, "").replace(/```\s*$/, "");
+    return JSON.parse(cleaned) as { summary: string; gaps: string[]; opportunities: string[] };
+  } catch {
+    return { summary: summary.slice(0, 1200), gaps: [], opportunities: [] };
+  }
+}
+
 export const nesreaSummarize = createServerFn({ method: "POST" })
   .inputValidator(z.object({
     department: z.string(),
     answers: z.record(z.string()),
   }))
+  .handler(async ({ data }) => summarizeNesreaAnswers(data.department, data.answers));
+
+export const submitNesrea = createServerFn({ method: "POST" })
+  .inputValidator(z.object({
+    department: z.string(),
+    departmentLabel: z.string(),
+    answers: z.record(z.string()),
+  }))
   .handler(async ({ data }) => {
-    const summary = await callOpenRouter([
-      { role: "system", content: "You are a senior consultant from Floodgate Digital / Jetech preparing an intake brief for NESREA ONE. Given a department's questionnaire answers, return a JSON object {summary: string, gaps: string[], opportunities: string[]}. summary = 5-7 sentence executive synthesis; gaps = up to 8 critical missing/weak answers; opportunities = up to 8 highest-impact platform interventions. JSON ONLY." },
-      { role: "user", content: `Department: ${data.department}\nAnswers JSON:\n${JSON.stringify(data.answers).slice(0, 60000)}` },
-    ], 1500);
-    try {
-      const cleaned = summary.trim().replace(/^```json\s*/i, "").replace(/```\s*$/, "");
-      return JSON.parse(cleaned) as { summary: string; gaps: string[]; opportunities: string[] };
-    } catch {
-      return { summary: summary.slice(0, 1200), gaps: [], opportunities: [] };
+    const { sendNesreaSubmissionEmail } = await import("../email.server");
+    const report = await summarizeNesreaAnswers(data.department, data.answers);
+
+    let id = crypto.randomUUID();
+    let submittedAt = new Date();
+    let saved = false;
+    let saveError = "";
+
+    const payload = {
+      portal: "nesrea",
+      department: data.department,
+      departmentLabel: data.departmentLabel,
+      answers: data.answers,
+      report,
+    };
+
+    if (ensureDatabaseUrl()) {
+      try {
+        const { prisma } = await import("../prisma.server");
+        const submission = await prisma.discoverySubmission.create({
+          data: {
+            companyName: data.departmentLabel,
+            contactEmail: data.answers.A2 || null,
+            industry: `NESREA ONE · ${data.department}`,
+            country: "Nigeria",
+            payload,
+          },
+          select: {
+            id: true,
+            submittedAt: true,
+          },
+        });
+
+        id = submission.id;
+        submittedAt = submission.submittedAt;
+        saved = true;
+      } catch (error) {
+        console.error(error);
+        saveError = error instanceof Error ? error.message : "Database save failed";
+      }
+    } else {
+      saveError = "Database is not configured";
     }
+
+    let emailSent = false;
+    let emailError = "";
+    try {
+      const email = await sendNesreaSubmissionEmail(
+        data.department,
+        data.departmentLabel,
+        data.answers,
+        report,
+        id,
+      );
+      emailSent = email.sent;
+      if (!email.sent) emailError = email.reason ?? "Email not sent";
+    } catch (error) {
+      console.error("NESREA email send error:", error);
+      emailError = error instanceof Error ? error.message : "Email failed";
+    }
+
+    if (!saved && !emailSent) {
+      throw new Error(`Submission failed. ${saveError || "Database save failed"}. ${emailError || "Email failed"}.`);
+    }
+
+    return {
+      id,
+      submittedAt: submittedAt.toISOString(),
+      saved,
+      saveError,
+      emailSent,
+      emailError,
+      report,
+    };
   });

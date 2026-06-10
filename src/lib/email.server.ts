@@ -1,6 +1,27 @@
 import type { DiscoveryData } from "./discovery-store";
 import { getServerEnv } from "./env.server";
 
+const DEFAULT_SUBMISSION_RECIPIENTS = [
+  "support@jetechltd.com.ng",
+  "floodgatesautomation@gmail.com",
+];
+
+export function getSubmissionRecipients() {
+  const fromEnv = getServerEnv("SUBMISSION_EMAIL_TO");
+  const configured = fromEnv
+    ? fromEnv.split(/[,;]+/).map((email) => email.trim()).filter(Boolean)
+    : [];
+  const seen = new Set<string>();
+  const recipients: string[] = [];
+  for (const email of [...configured, ...DEFAULT_SUBMISSION_RECIPIENTS]) {
+    const key = email.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    recipients.push(email);
+  }
+  return recipients;
+}
+
 function formatValue(value: unknown): string {
   if (Array.isArray(value)) return value.length ? value.join(", ") : "-";
   if (typeof value === "boolean") return value ? "Yes" : "No";
@@ -55,18 +76,22 @@ function escapeHtml(value: string) {
     .replace(/'/g, "&#039;");
 }
 
-export async function sendSubmissionEmail(data: DiscoveryData, submissionId: string) {
+async function sendResendEmail({
+  subject,
+  text,
+  replyTo,
+}: {
+  subject: string;
+  text: string;
+  replyTo?: string;
+}) {
   const apiKey = getServerEnv("RESEND_API_KEY");
   const fromEmail = getServerEnv("RESEND_FROM_EMAIL") ?? "Discovery Portal <onboarding@resend.dev>";
-  const toEmail = getServerEnv("SUBMISSION_EMAIL_TO") ?? "support@jetechltd.com.ng";
+  const to = getSubmissionRecipients();
 
   if (!apiKey) {
     return { sent: false, reason: "RESEND_API_KEY is not configured" };
   }
-
-  const subject = `Discovery submission: ${data.companyName || "New prospect"}`;
-  const text = buildSubmissionText(data, submissionId);
-  const replyTo = data.contactEmail || undefined;
 
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -76,7 +101,7 @@ export async function sendSubmissionEmail(data: DiscoveryData, submissionId: str
     },
     body: JSON.stringify({
       from: fromEmail,
-      to: [toEmail],
+      to,
       reply_to: replyTo,
       subject,
       text,
@@ -90,4 +115,70 @@ export async function sendSubmissionEmail(data: DiscoveryData, submissionId: str
   }
 
   return { sent: true, reason: "" };
+}
+
+export async function sendSubmissionEmail(data: DiscoveryData, submissionId: string) {
+  const subject = `Discovery submission: ${data.companyName || "New prospect"}`;
+  const text = buildSubmissionText(data, submissionId);
+  return sendResendEmail({
+    subject,
+    text,
+    replyTo: data.contactEmail || undefined,
+  });
+}
+
+export interface NesreaReport {
+  summary: string;
+  gaps: string[];
+  opportunities: string[];
+}
+
+function buildNesreaSubmissionText(
+  department: string,
+  departmentLabel: string,
+  answers: Record<string, string>,
+  report: NesreaReport,
+  submissionId: string,
+) {
+  const answerLines = Object.entries(answers)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([id, value]) => `${id}: ${value || "-"}`)
+    .join("\n");
+
+  return [
+    `Reference: ${submissionId}`,
+    `Portal: NESREA ONE`,
+    `Department code: ${department}`,
+    `Department: ${departmentLabel}`,
+    `Respondent: ${answers.A2 || "-"}`,
+    `Position: ${answers.A3 || "-"}`,
+    "",
+    "Executive Summary:",
+    report.summary,
+    "",
+    "Gaps / Missing Information:",
+    ...(report.gaps.length ? report.gaps.map((g) => `- ${g}`) : ["- None noted"]),
+    "",
+    "Platform Opportunities:",
+    ...(report.opportunities.length ? report.opportunities.map((o) => `- ${o}`) : ["- None noted"]),
+    "",
+    "Questionnaire Answers:",
+    answerLines,
+  ].join("\n");
+}
+
+export async function sendNesreaSubmissionEmail(
+  department: string,
+  departmentLabel: string,
+  answers: Record<string, string>,
+  report: NesreaReport,
+  submissionId: string,
+) {
+  const subject = `NESREA ONE submission: ${departmentLabel} (${department})`;
+  const text = buildNesreaSubmissionText(department, departmentLabel, answers, report, submissionId);
+  return sendResendEmail({
+    subject,
+    text,
+    replyTo: answers.A2?.includes("@") ? answers.A2 : undefined,
+  });
 }
