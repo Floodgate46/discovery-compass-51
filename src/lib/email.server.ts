@@ -1,4 +1,5 @@
 import type { DiscoveryData } from "./discovery-store";
+import { getServerEnv } from "./env.server";
 
 function formatValue(value: unknown): string {
   if (Array.isArray(value)) return value.length ? value.join(", ") : "-";
@@ -55,9 +56,9 @@ function escapeHtml(value: string) {
 }
 
 export async function sendSubmissionEmail(data: DiscoveryData, submissionId: string) {
-  const apiKey = process.env.RESEND_API_KEY;
-  const fromEmail = process.env.RESEND_FROM_EMAIL ?? "Discovery Portal <onboarding@resend.dev>";
-  const toEmail = process.env.SUBMISSION_EMAIL_TO ?? "support@jetechltd.com.ng";
+  const apiKey = getServerEnv("RESEND_API_KEY");
+  const fromEmail = getServerEnv("RESEND_FROM_EMAIL") ?? "Discovery Portal <onboarding@resend.dev>";
+  const toEmail = getServerEnv("SUBMISSION_EMAIL_TO") ?? "support@jetechltd.com.ng";
 
   if (!apiKey) {
     return { sent: false, reason: "RESEND_API_KEY is not configured" };

@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { ensureDatabaseUrl } from "../env.server";
 
 const stringArray = z.array(z.string());
 
@@ -82,8 +83,9 @@ export const submitDiscovery = createServerFn({ method: "POST" })
     let id = crypto.randomUUID();
     let submittedAt = new Date();
     let saved = false;
+    let saveError = "";
 
-    if (process.env.DATABASE_URL) {
+    if (ensureDatabaseUrl()) {
       try {
         const { prisma } = await import("../prisma.server");
         const submission = await prisma.discoverySubmission.create({
@@ -105,7 +107,10 @@ export const submitDiscovery = createServerFn({ method: "POST" })
         saved = true;
       } catch (error) {
         console.error(error);
+        saveError = error instanceof Error ? error.message : "Database save failed";
       }
+    } else {
+      saveError = "Database is not configured";
     }
 
     let emailSent = false;
@@ -119,10 +124,15 @@ export const submitDiscovery = createServerFn({ method: "POST" })
       emailError = error instanceof Error ? error.message : "Email failed";
     }
 
+    if (!saved && !emailSent) {
+      throw new Error(`Submission failed. ${saveError || "Database save failed"}. ${emailError || "Email failed"}.`);
+    }
+
     return {
       id,
       submittedAt: submittedAt.toISOString(),
       saved,
+      saveError,
       emailSent,
       emailError,
     };

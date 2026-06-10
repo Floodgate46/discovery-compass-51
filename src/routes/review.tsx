@@ -19,6 +19,7 @@ function ReviewPage() {
   const [emailSent, setEmailSent] = useState(false);
   const [emailError, setEmailError] = useState("");
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
@@ -60,9 +61,10 @@ function ReviewPage() {
       setEmailSent(result.emailSent);
       setEmailError(result.emailError ?? "");
       setSaved(result.saved);
+      setSaveError(result.saveError ?? "");
       setSubmitted(true);
-    } catch {
-      setSubmitError("We could not save your submission. Please try again.");
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : "We could not submit your discovery. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -281,9 +283,12 @@ function ReviewPage() {
             {!emailSent && emailError && (
               <div className="mt-1 text-xs text-amber-400">Email note: {emailError}</div>
             )}
+            {!saved && saveError && (
+              <div className="mt-1 text-xs text-amber-400">Dashboard note: {saveError}</div>
+            )}
             </div>
             {submissionId && <div className="mt-2 text-xs text-muted-foreground">Reference: {submissionId}</div>}
-            <button onClick={() => { reset(); setSubmitted(false); setSubmissionId(""); setEmailSent(false); setSaved(false); }} className="mt-3 text-xs text-muted-foreground hover:text-foreground underline">Start a new discovery</button>
+            <button onClick={() => { reset(); setSubmitted(false); setSubmissionId(""); setEmailSent(false); setEmailError(""); setSaved(false); setSaveError(""); }} className="mt-3 text-xs text-muted-foreground hover:text-foreground underline">Start a new discovery</button>
           </div>
         )}
 
