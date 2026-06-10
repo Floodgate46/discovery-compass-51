@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WizardRouteImport } from './routes/wizard'
 import { Route as ReviewRouteImport } from './routes/review'
+import { Route as NesreaRouteImport } from './routes/nesrea'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminLoginRouteImport } from './routes/admin/login'
@@ -23,6 +24,11 @@ const WizardRoute = WizardRouteImport.update({
 const ReviewRoute = ReviewRouteImport.update({
   id: '/review',
   path: '/review',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NesreaRoute = NesreaRouteImport.update({
+  id: '/nesrea',
+  path: '/nesrea',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRoute = AdminRouteImport.update({
@@ -44,6 +50,7 @@ const AdminLoginRoute = AdminLoginRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/nesrea': typeof NesreaRoute
   '/review': typeof ReviewRoute
   '/wizard': typeof WizardRoute
   '/admin/login': typeof AdminLoginRoute
@@ -51,6 +58,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/nesrea': typeof NesreaRoute
   '/review': typeof ReviewRoute
   '/wizard': typeof WizardRoute
   '/admin/login': typeof AdminLoginRoute
@@ -59,21 +67,30 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/nesrea': typeof NesreaRoute
   '/review': typeof ReviewRoute
   '/wizard': typeof WizardRoute
   '/admin/login': typeof AdminLoginRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/admin' | '/review' | '/wizard' | '/admin/login'
+  fullPaths: '/' | '/admin' | '/nesrea' | '/review' | '/wizard' | '/admin/login'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin' | '/review' | '/wizard' | '/admin/login'
-  id: '__root__' | '/' | '/admin' | '/review' | '/wizard' | '/admin/login'
+  to: '/' | '/admin' | '/nesrea' | '/review' | '/wizard' | '/admin/login'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/nesrea'
+    | '/review'
+    | '/wizard'
+    | '/admin/login'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
+  NesreaRoute: typeof NesreaRoute
   ReviewRoute: typeof ReviewRoute
   WizardRoute: typeof WizardRoute
 }
@@ -92,6 +109,13 @@ declare module '@tanstack/react-router' {
       path: '/review'
       fullPath: '/review'
       preLoaderRoute: typeof ReviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/nesrea': {
+      id: '/nesrea'
+      path: '/nesrea'
+      fullPath: '/nesrea'
+      preLoaderRoute: typeof NesreaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
@@ -131,6 +155,7 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
+  NesreaRoute: NesreaRoute,
   ReviewRoute: ReviewRoute,
   WizardRoute: WizardRoute,
 }
